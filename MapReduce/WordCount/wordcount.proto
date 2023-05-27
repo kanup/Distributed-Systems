@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+
+message Empty {
+
+}
+
+service Mapper {
+  rpc Map (ProcessRequest) returns (Empty) {}
+}
+
+message ProcessRequest {
+  string path = 1;
+}
+
+
+service Reducer {
+  rpc Partition (Empty) returns (Empty) {}
+  rpc Reduce (Empty) returns (Empty) {}
+}
