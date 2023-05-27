@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+
+service RegistryServer {
+  rpc RegisterServer (RegisterRequest) returns (RegisterResponse) {}
+  rpc GetServerList (ServerListRequest) returns (ServerListResponse) {}
+}
+
+message RegisterRequest {
+  string name = 1;
+  string ipaddress = 2;
+}
+
+message RegisterResponse {
+  string status = 1;
+  string primary_ipaddress = 2;
+  bool primary = 3;
+}
+
+message ServerListRequest {
+
+}
+
+message ServerListResponse {
+  string status = 1;
+  repeated string listOfServers = 2;
+}
+
+
+service Server {
+  rpc WriteReq (WriteRequest) returns (WriteResponse) {}
+  rpc ReadReq (ReadRequest) returns (ReadResponse) {}
+  rpc DeleteReq (DeleteRequest) returns (DeleteResponse) {}
+
+  rpc Write (WriteRequest) returns (WriteResponse) {}
+  rpc Delete (DeleteRequest) returns (DeleteResponse) {}
+
+  rpc Primary (PrimaryRequest) returns (Confirmation) {}
+}
+
+message PrimaryRequest {
+  string operation = 1;
+  string fileid = 2;
+  optional string filename = 3;
+  optional string content = 4;
+}
+
+message Confirmation {
+  string status = 1;
+}
+
+message WriteRequest {
+  string filename = 1;
+  string content = 2;
+  string fileid = 3;
+}
+
+message WriteResponse {
+  string status = 1;
+  string fileid = 2;
+  string version = 3;
+}
+
+message ReadRequest {
+  string fileid = 1;
+}
+
+message ReadResponse {
+  string status = 1;
+  string filename = 2;
+  string content = 3;
+  string version = 4;
+}
+
+message DeleteRequest {
+  string fileid = 1;
+}
+
+message DeleteResponse {
+  string status = 1;
+}
+
