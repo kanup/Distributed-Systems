@@ -1,0 +1,87 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+
+service RegistryServerServices{
+    rpc RegisterReplica( RegisterReplicaRequest ) returns ( RegisterReplicaResponse ){}
+    rpc GetAllReplicas( Empty) returns ( GetAllReplicasResponse ){}
+    rpc GetReadReplicas( Empty ) returns (  GetReadReplicasResponse ){}
+    rpc GetWriteReplicas(  Empty ) returns (  GetWriteReplicasResponse ){}
+    rpc GetDeleteReplicas(  Empty ) returns (  GetDeleteReplicasResponse ){}
+}
+
+service ClientServices{
+}
+
+service ReplicaServerServices{
+    rpc ReadFile( ReadReplicaRequest ) returns ( ReadReplicaResponse ){}
+    rpc WriteFile( WriteReplicaRequest ) returns ( WriteReplicaResponse ){}
+    rpc DeleteFile( DeleteReplicaRequest ) returns ( DeleteReplicaResponse ){}
+}
+
+message GetFileRequest{
+    string file_uuid = 1;
+}
+
+message GetFilesResponse{
+    repeated string file_list = 1;
+}
+
+message RegisterReplicaRequest{
+    string replica_ip = 1;
+    string replica_port = 2;
+}
+
+message RegisterReplicaResponse{
+    string msg = 1;
+}
+
+message Empty{
+
+}
+
+message GetAllReplicasResponse{
+    repeated string replica_list = 1;
+}
+
+message GetReadReplicasResponse{
+    repeated string replica_list = 1;
+}
+
+message GetWriteReplicasResponse{
+    repeated string replica_list = 1;
+}
+
+message GetDeleteReplicasResponse{
+    repeated string replica_list = 1;
+}
+
+message ReadReplicaRequest{
+    string file_uuid = 1;
+} 
+
+message ReadReplicaResponse{
+    string status = 1;
+    string file_name = 2;
+    string file_content = 3;
+    google.protobuf.Timestamp version = 4;
+}
+
+message WriteReplicaRequest{
+    string file_uuid = 1;
+    string file_name = 2;
+    string file_content = 3;
+}
+
+message WriteReplicaResponse{
+    string status = 1;
+    string file_uuid = 2;
+    google.protobuf.Timestamp version = 4;
+}
+
+message DeleteReplicaRequest{
+    string file_uuid = 1;
+}
+
+message DeleteReplicaResponse{
+    string status = 1;
+}
