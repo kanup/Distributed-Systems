@@ -1,0 +1,83 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+
+
+service RegistryServerServices{
+  rpc RegisterServer(RegistrServerRequest) returns (RegisterServerResponse) {}
+  rpc GetServerList(GetServerListRequest) returns (ServerListResponse) {}
+}
+service ClientServices{
+}
+service ServerServices{
+  rpc JoinServer(JoinServerRequest) returns (JoinServerResponse) {}
+  rpc PublishArticle(PublishArticleRequest) returns (PublishArticleResponse) {}
+  rpc GetArticles(GetArticlesRequest) returns (GetArticlesResponse) {}
+  rpc LeaveServer(LeaveServerRequest) returns (LeaveServerResponse) {}
+}
+
+message GetServerListRequest{
+  string address=1; //server#-ip:port
+}
+
+message RegistrServerRequest{
+  string name=1; //server name - Server#
+  string port=2; //server port - #####
+}
+message RegisterServerResponse{
+  string message=1; //success or fail
+}
+
+
+message ServerListResponse{
+  repeated string listOfServers=1; //server#-ip:port
+}
+
+
+message JoinServerRequest{
+  string id=1;
+}
+message JoinServerResponse{
+  string message=1; //success or fail
+}
+
+
+message PublishArticleRequest{
+  string id = 1;
+  Article article = 2;
+}
+message PublishArticleResponse{
+  string message=1; //success or fail
+}
+
+
+message GetArticlesRequest{
+  string id = 1;
+  optional string article_type = 4;
+  optional string author = 3;
+  optional google.protobuf.Timestamp timestamp  = 2;
+}
+message GetArticlesResponse{
+  repeated Article articles = 1;
+}
+
+
+message LeaveServerRequest{
+  string id=1;
+}
+message LeaveServerResponse{
+  string message=1; //success or fail
+}
+
+
+message Article{
+  oneof article_type {
+    bool sports = 4;
+    bool politics = 5;
+    bool fashion  = 6;
+  }
+  string title = 7;
+  string author = 1;
+  optional google.protobuf.Timestamp timestamp  = 2;
+  string content = 3; 
+
+}
