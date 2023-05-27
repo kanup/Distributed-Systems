@@ -1,0 +1,182 @@
+import pubsub_pb2
+import pubsub_pb2_grpc
+import grpc
+import time 
+from concurrent import futures
+import uuid
+import datetime
+from google.protobuf import timestamp_pb2
+
+channels = {}
+
+class ClientServices(pubsub_pb2_grpc.ClientServicesServicer): #class for client services
+    def __init__(self):
+        self.subscribed = []
+        self.id = str(uuid.uuid1())
+    def addMyServer(self, server):
+        self.subscribed.append(server)
+
+def run():
+    client = ClientServices()
+    port =  input("Enter port number: ") #port number for client - 50052
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    pubsub_pb2_grpc.add_ClientServicesServicer_to_server(ClientServices(), server)
+    server.add_insecure_port('[::]:' + port)
+    server.start()
+    print("Client started on " + port)
+    while True:
+        print("1. Get Active Server(s) List") #returns active servers - allows JoinServer functionality
+        print("2. Leave a server") #returns self subscribed servers
+        print("3. Publish an article") # returns self subscribed servers - publish an article
+        print("4. Get articles") # exit client
+        print("5. Exit") # exit client
+        input1 = input("Enter your choice: ")
+        if(input1 == '1'):
+            CallToRegsitryServer(port, client)
+        elif(input1 == '2'):
+            CallToLeaveServer(client)
+        elif(input1 == '3'):
+            CallToPublishMessage(client)
+        elif(input1 == '4'):
+            CallToGetArticles(client)
+        else:
+            server.stop(0)
+            print("Client stopped")
+            break
+
+    
+def CallToRegsitryServer(portnumb, client):
+    with grpc.insecure_channel('localhost:50051') as channel: #connection set up with registryserver to access active servers
+        stub = pubsub_pb2_grpc.RegistryServerServicesStub(channel)
+        serverresponse = stub.GetServerList(pubsub_pb2.GetServerListRequest(address="localhost:" + str(portnumb)))
+        if( len(serverresponse.listOfServers) == 0):
+            print("Sorry, no active servers")
+            return
+        for item in serverresponse.listOfServers: #loop through active servers
+            print(item)
+        serveraddress = input("Enter server port: ")
+        if( serveraddress == ""):
+            return
+        channelnew = grpc.insecure_channel("localhost:"+serveraddress)
+        stubnew = pubsub_pb2_grpc.ServerServicesStub(channelnew)
+        channels["localhost:"+serveraddress] = [channelnew, stubnew]
+        print("Client ID: " + client.id)
+        response = stubnew.JoinServer(pubsub_pb2.JoinServerRequest(id=client.id))
+        print(response)
+        client.addMyServer("localhost:"+serveraddress)      
+    channel.close()
+    
+
+def CallToLeaveServer(client):
+    if len(client.subscribed) == 0:
+        print("Sorry, You are not subscribed to any server!")
+        return
+
+    print("Select a server from your subsribed list: ")
+    for item in client.subscribed:
+        print(item)
+    serveraddress = input("Enter server port: ")
+    if( serveraddress == ""):
+        return
+    response = channels.get("localhost:"+serveraddress)[1].LeaveServer(pubsub_pb2.LeaveServerRequest(id=client.id))
+    print(response)
+    if( response.message == "SUCCESS"):
+        client.subscribed.remove("localhost:"+serveraddress)
+    channels.get("localhost:"+serveraddress)[0].close()
+
+
+def CallToPublishMessage(client):
+    if len(client.subscribed) == 0:
+        print("Sorry, You are not subscribed to any server!")
+        return
+    print("Select a server from your subsribed list: ")
+    for item in client.subscribed:
+        print(item)
+
+    serveraddress = input("Enter server port: ")
+    if( serveraddress == ""):
+        print("Server port cannot be blank!")
+        return
+
+    article_obj = pubsub_pb2.Article()
+    serveraddress = "localhost:"+serveraddress
+
+    try:
+        article_type = input("Enter the type of the article: ")
+        if not article_type:
+            raise ValueError("Type cannot be blank")
+            
+        try:
+            valid_types = ["sports", "politics", "fashion"]
+            if article_type not in valid_types:
+                raise ValueError("Invalid type")
+        except ValueError as e:
+            raise ValueError("Invalid type")
+
+        if article_type == "sports":
+            article_obj.sports = True
+        elif article_type == "politics":
+            article_obj.politics = True
+        elif article_type == "fashion":
+            article_obj.fashion = True
+
+        title = input("Enter the title of the article: ")
+        if not title:
+            raise ValueError("Title cannot be blank")
+        article_obj.title = title
+
+        author = input("Enter the author of the title: ")
+        if not author:
+            raise ValueError("Author cannot be blank")
+        article_obj.author = author
+
+        while True:
+            try:
+                content = input("Enter the content of the article: ")
+                if not content or len(content.strip()) > 200:
+                    raise ValueError("Content is either blank or too long")
+                article_obj.content = content
+                break
+            except ValueError as e:
+                print(e)
+        print(serveraddress+" server")
+        response = channels.get(serveraddress)[1].PublishArticle(pubsub_pb2.PublishArticleRequest(id = client.id, article = article_obj))
+        print(response)
+
+    except ValueError as e:
+        print(e)
+        return
+
+    
+    
+def CallToGetArticles(client):
+    if len(client.subscribed) == 0:
+        print("Sorry, You are not subscribed to any server!")
+        return
+    print("Select a server from your subsribed list: ")
+    for item in client.subscribed:
+        print(item)
+    serveraddress = input("Enter server port: ")
+    if( serveraddress == ""):
+        return
+    serveraddress = "localhost:"+serveraddress
+    article_type = input("Enter the type of the article: ")
+    request_obj = pubsub_pb2.GetArticlesRequest()
+    if article_type != "":
+        request_obj.article_type = article_type
+    authorname = input("Enter the author name: ")
+    if authorname != "":
+        request_obj.author = authorname
+    article_date = input("Enter the timestamp of the article in (mm/dd/yyyy)")
+
+    if article_date != "":
+        dt = datetime.datetime.strptime(article_date, "%m/%d/%Y")
+        request_obj.timestamp.FromDatetime(dt)
+    request_obj.id = client.id
+    
+    response = channels.get(serveraddress)[1].GetArticles(request_obj)
+    print(response)
+    
+
+if __name__ == '__main__':
+    run()
