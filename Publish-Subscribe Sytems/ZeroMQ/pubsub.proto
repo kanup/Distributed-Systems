@@ -1,0 +1,65 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+
+message client{
+  string uuid=1;
+}
+
+
+message addressListResponse{
+  repeated address addresses=1;
+}
+message Empty{}
+message Response{
+  string body=1;
+}
+message Request{
+  string port=1;
+  string method=2;
+  string body=3;
+}
+
+message Article{
+  oneof type {
+    bool sports = 5;
+    bool politics = 6;
+    bool fashion  = 7;
+  }
+  string author = 1;
+  google.protobuf.Timestamp timestamp  = 2;
+  string content = 3; 
+  client client=4;
+
+}
+message Server {
+  
+  repeated client members = 1;
+  string name=7;
+  string port=2;
+  int32 maxclient=3;
+  repeated Article publishedArticles = 4;
+  
+}
+message ArticleResponse{
+  repeated Article articles=1;
+}
+message ArticleRequest{
+  string author=1;
+  google.protobuf.Timestamp timestamp  = 2;
+  oneof type {
+    bool sports = 4;
+    bool politics = 5;
+    bool fashion  = 6;
+  }
+  client client=3;
+}
+message address{
+  string name=1;
+  string port=2;
+}
+message RegistryServer {
+  //address=
+  int32 maxserver=2;
+
+  repeated address activeServers = 1;
+}
